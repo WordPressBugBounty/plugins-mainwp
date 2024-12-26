@@ -5,9 +5,9 @@ Author: mainwp
 Author URI: https://mainwp.com
 Plugin URI: https://mainwp.com
 Requires at least: 6.2
-Tested up to: 6.7
+Tested up to: 6.7.1
 Requires PHP: 7.4
-Stable tag: 5.3.2
+Stable tag: 5.3.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -142,6 +142,23 @@ Yes, we have a quick FAQ with many more questions and answers [here](https://mai
 10. Dashboard Insights
 
 == Changelog ==
+
+= 5.3.3 - 12-26-2024 =
+
+* Added: Informational message indicating that MainWP does not store administrator passwords in the Quick Setup Wizard, sample CSV, or export CSV files.
+* Fixed: Issue with processing automatic updates for certain configurations.
+* Fixed: Text visibility issue in selected table rows when using the Dark theme.
+* Fixed: Problem with adding sites via REST API when the site name parameter was omitted.
+* Fixed: Error in the bulk update process when "Backup Before Update" was required.
+* Fixed: Incorrect placeholder image for themes on the Manage Themes and Updates pages.
+* Fixed: Incorrect changelog link for the MainWP SSL Monitor Extension.
+* Fixed: Broken "Import Demo Content" process.
+* Fixed: Miscalculation of the number of monitoring incidents.
+* Fixed: Incorrect uptime ratio displayed in the Uptime Monitoring widget.
+* Updated: Background color for dropdown menu items in the Dark theme for better visibility.
+* Updated: Informational message on the Uptime Monitoring page.
+* Updated: Redesigned Welcome page in the Quick Setup Wizard for a more user-friendly experience.
+* Updated: Content and layout of the "Request Review" informational message.
 
 = 5.3.2 - 12-12-2024 =
 
