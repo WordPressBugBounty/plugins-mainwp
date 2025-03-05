@@ -61,7 +61,6 @@ class Log_Admin {
     public function __construct( $manager ) {
         $this->manager = $manager;
         add_action( 'init', array( &$this, 'init' ) );
-        add_filter( 'mainwp_getsubpages_settings', array( $this, 'add_subpage_menu_logs' ) );
         // Load admin scripts and styles.
         add_action(
             'admin_enqueue_scripts',
@@ -90,55 +89,12 @@ class Log_Admin {
      * Handle admin_init action.
      */
     public function admin_init() {
-        MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_display_rows', array( $this, 'ajax_display_rows' ) );
         MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_delete_records', array( $this, 'ajax_delete_records' ) );
         MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_compact_records', array( $this, 'ajax_compact_records' ) );
-        MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_events_display_rows', array( Log_Insights_Page::instance(), 'ajax_events_display_rows' ) );
+        MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_manage_events_display_rows', array( Log_Manage_Insights_Events_Page::instance(), 'ajax_manage_events_display_rows' ) );
+        MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_widget_insights_display_rows', array( Log_Insights_Page::instance(), 'ajax_events_display_rows' ) );
+        MainWP_Post_Handler::instance()->add_action( 'mainwp_module_log_widget_events_overview_display_rows', array( Log_Insights_Page::instance(), 'ajax_events_overview_display_rows' ) );
         Log_Events_Filter_Segment::get_instance()->admin_init();
-    }
-
-
-    /**
-     * Init sub menu logs.
-     *
-     * @param array $subpages sub pages.
-     *
-     * @action init
-     */
-    public function add_subpage_menu_logs( $subpages = array() ) {
-        $subpages[] = array(
-            'title'    => esc_html__( 'Dashboard Insights', 'mainwp' ),
-            'slug'     => 'DashboardInsights',
-            'callback' => array( $this, 'render_list_table' ),
-            'class'    => 'mainwp-logs-menu',
-        );
-        return $subpages;
-    }
-
-    /**
-     * Render main page
-     */
-    public function render_list_table() {
-        $this->list_table = new Log_List_Table( $this->manager );
-        /** This action is documented in ../pages/page-mainwp-manage-sites.php */
-        do_action( 'mainwp_pageheader_settings', 'DashboardInsights' );
-        ?>
-        <div id="mainwp-manage-sites-content" class="ui segment">
-            <div class="ui form">
-                <h3 class="ui dividing header"><?php esc_html_e( 'Dashboard Insights', 'mainwp' ); ?></h3>
-                <h4 class="ui header"><?php printf( esc_html__( 'Total logs size: %1$s (MB)', 'mainwp' ), esc_html( $this->get_db_size() ) ); ?></h4>
-                <div id="mainwp-message-zone" style="display:none;" class="ui message"></div>
-                <form method="post" class="mainwp-table-container">
-                    <?php
-                    wp_nonce_field( 'mainwp-admin-nonce' );
-                    $this->list_table->display();
-                    ?>
-                </form>
-            </div>
-        </div>
-        <?php
-        /** This action is documented in ../pages/page-mainwp-manage-sites.php */
-        do_action( 'mainwp_pagefooter_settings', 'DashboardInsights' );
     }
 
     /**
@@ -189,21 +145,6 @@ class Log_Admin {
         }
     }
 
-
-    /**
-     * Method ajax_display_rows()
-     *
-     * Display table rows, optimize for shared hosting or big networks.
-     */
-    public function ajax_display_rows() {
-        MainWP_Post_Handler::instance()->check_security( 'mainwp_module_log_display_rows' );
-        $this->load_list_table();
-        $this->list_table->prepare_items();
-        $output = $this->list_table->ajax_get_datatable_rows();
-        MainWP_Logger::instance()->log_execution_time( 'ajax_display_rows()' );
-        wp_send_json( $output );
-    }
-
     /**
      * Handle ajax delete logs records.
      */
@@ -217,7 +158,7 @@ class Log_Admin {
         $end_time   = ! empty( $end_date ) ? strtotime( $end_date . ' 23:59:59' ) : '';
 
         if ( ! is_numeric( $start_time ) || ! is_numeric( $end_time ) || $start_time > $end_time ) {
-            die( wp_json_encode( array( 'error' => esc_html__( 'Invalid Start date or end date. Please try again.' ) ) ) );
+            die( wp_json_encode( array( 'error' => esc_html__( 'Invalid Start date or end date. Please try again.', 'mainwp' ) ) ) );
         }
 
         $this->manager->db->create_compact_and_erase_records( $start_time, $end_time );
@@ -235,7 +176,7 @@ class Log_Admin {
         $year = isset( $_POST['year'] ) ? intval( $_POST['year'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
         if ( $year < 2022 ) {
-            die( wp_json_encode( array( 'error' => esc_html__( 'Invalid selected year. Please try again.' ) ) ) );
+            die( wp_json_encode( array( 'error' => esc_html__( 'Invalid selected year. Please try again.', 'mainwp' ) ) ) );
         }
 
         $aday = $year . '-12-15'; // a day in last month.
@@ -249,16 +190,6 @@ class Log_Admin {
     }
 
     /**
-     * Method load_sites_table()
-     *
-     * Load sites table.
-     */
-    public function load_list_table() {
-        $this->list_table = new Log_List_Table( $this->manager );
-    }
-
-
-    /**
      * Schedules a purge of records.
      *
      * @return void
@@ -268,11 +199,9 @@ class Log_Admin {
         if ( $enable_schedule ) {
             $last_purge = get_option( 'mainwp_module_log_last_time_auto_purge_logs' );
             $next_purge = get_option( 'mainwp_module_log_next_time_auto_purge_logs' );
-            $days       = false;
+            $days       = 100;
             if ( is_array( $this->manager->settings->options ) && isset( $this->manager->settings->options['records_ttl'] ) ) {
                 $days = intval( $this->manager->settings->options['records_ttl'] );
-            } else {
-                $days = 100;
             }
 
             if ( defined( 'MAINWP_MODULE_LOG_KEEP_RECORDS_TTL' ) && is_numeric( MAINWP_MODULE_LOG_KEEP_RECORDS_TTL ) && MAINWP_MODULE_LOG_KEEP_RECORDS_TTL > 0 ) {
@@ -338,21 +267,28 @@ class Log_Admin {
      * @return array Array of users.
      */
     public function get_all_users() {
-        $list_users = array();
-        $all_users  = get_users();
-        if ( is_array( $all_users ) ) {
-            foreach ( $all_users as $user ) {
-                if ( empty( $user->ID ) ) {
-                    continue;
-                }
-                $fields             = array();
-                $fields['id']       = $user->ID;
-                $fields['login']    = $user->user_login;
-                $fields['nicename'] = $user->user_nicename;
-                $list_users[]       = $fields;
-            }
+        $all_users = get_users(
+            array(
+                'fields' => array( 'ID', 'user_login', 'user_nicename' ),
+            )
+        );
+        if ( empty( $all_users ) || ! is_array( $all_users ) ) {
+            return array();
         }
-        return $list_users;
+        $all_users = array_map(
+            function ( $user ) {
+                if ( empty( $user->ID ) ) {
+                    return false;
+                }
+                return array(
+                    'id'       => $user->ID,
+                    'login'    => $user->user_login,
+                    'nicename' => $user->user_nicename,
+                );
+            },
+            $all_users
+        );
+        return array_filter( $all_users );
     }
 
     /**
@@ -366,9 +302,9 @@ class Log_Admin {
             ?>
             <p><?php esc_html_e( 'If you need help with the Dashboard Insights module, please review following help documents', 'mainwp' ); ?></p>
             <div class="ui list">
-                <div class="item"><i class="external alternate icon"></i> <a href="https://kb.mainwp.com/docs/dashboard-insights/" target="_blank">Dashboard Insights</a></div> <?php // NOSONAR -- compatible with help. ?>
-                <div class="item"><i class="external alternate icon"></i> <a href="https://kb.mainwp.com/docs/dashboard-insights/#comprehensive-filtering-options" target="_blank">Filtering Options</a></div> <?php // NOSONAR -- compatible with help. ?>
-                <div class="item"><i class="external alternate icon"></i> <a href="https://kb.mainwp.com/docs/dashboard-insights/#export-the-data-and-charts-from-an-individual-widget" target="_blank">Export Insights Data</a></div> <?php // NOSONAR -- compatible with help. ?>
+                <div class="item"><i class="external alternate icon"></i> <a href="https://mainwp.com/kb/dashboard-insights/" target="_blank">Dashboard Insights</a></div> <?php // NOSONAR -- compatible with help. ?>
+                <div class="item"><i class="external alternate icon"></i> <a href="https://mainwp.com/kb/dashboard-insights/#comprehensive-filtering-options" target="_blank">Filtering Options</a></div> <?php // NOSONAR -- compatible with help. ?>
+                <div class="item"><i class="external alternate icon"></i> <a href="https://mainwp.com/kb/dashboard-insights/#export-the-data-and-charts-from-an-individual-widget" target="_blank">Export Insights Data</a></div> <?php // NOSONAR -- compatible with help. ?>
                 <?php
                 /**
                  * Action: mainwp_module_dashboard_insights_help_item
