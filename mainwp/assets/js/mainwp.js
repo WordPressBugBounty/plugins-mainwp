@@ -422,7 +422,8 @@ window.mainwp_js_get_error_not_detected_connect = function (jsonStr, what, elemI
         return false; // it is not or invalid json.
       }
     } catch (e) {
-      return false; // it is not or invalid json.
+        console.log(e);
+        return false; // it is not or invalid json.
     }
   }
   return __('MainWP Child plugin not detected or could not be reached! Ensure the MainWP Child plugin is installed and activated on the child site, and there are no security rules blocking requests.  If you continue experiencing this issue, check the MainWP Community for help.');
@@ -3060,8 +3061,9 @@ function isUrl(url) {
     new URL(url);
     return true;
   } catch (e) {
-    return false;
+    console.log(e);
   }
+  return false;
 }
 
 function removeUrlParams(url,params) {
@@ -3754,15 +3756,26 @@ let mainwp_insights_row_actions_dismiss = function (obj) {
 
 
 // Manage Bulk Actions
-let mainwp_sites_changes_actions_bulk_action = function (act) {
+let mainwp_sites_changes_actions_bulk_action = function (act, which_act) {
   mainwpVars.bulkInstallTotal = 0;
   bulkInstallCurrentThreads = 0;
   bulkInstallDone = 0;
+  mainwpVars.bulkActionIndent = '';
+  if(which_act === 'widget'){
+    mainwpVars.bulkActionIndent = 'widget';
+  }
   if ( act === 'dismiss-selected' ) {
     jQuery('#mainwp_sites_changes_bulk_dismiss_selected_btn').addClass('disabled');
     let selector = '#mainwp-module-log-records-body-table tr';
     mainwpVars.bulkInstallTotal = jQuery(selector).find('input[type="checkbox"]:checked').length;
     jQuery(selector).addClass('queue');
+    if (jQuery(selector).length) {
+        if(mainwpVars.bulkActionIndent === 'widget'){
+            jQuery('#mainwp_widget_sites_changes_bulk_dismiss_selected_btn').addClass('disabled');
+        } else {
+            jQuery('#mainwp_sites_changes_bulk_dismiss_selected_btn').addClass('disabled');
+        }
+    }
     mainwp_sites_changes_actions_dismiss_start_next(selector);
   } else if( act === 'dismiss-all' ) {
     jQuery('#mainwp_sites_changes_bulk_dismiss_all_btn').addClass('disabled');
@@ -3813,9 +3826,6 @@ let mainwp_sites_changes_actions_dismiss_specific = function (pObj, selector) {
     bulkInstallCurrentThreads--;
     bulkInstallDone++;
     mainwp_sites_changes_actions_dismiss_start_next(selector);
-    if (mainwpVars.bulkInstallTotal == bulkInstallDone) {
-        jQuery('#mainwp_sites_changes_bulk_dismiss_selected_btn').removeClass('disabled');
-    }
   }, 'json');
   return false;
 }
