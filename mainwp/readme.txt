@@ -7,7 +7,7 @@ Plugin URI: https://mainwp.com
 Requires at least: 6.2
 Tested up to: 6.8.1
 Requires PHP: 8.1
-Stable tag: 5.4.0.11
+Stable tag: 5.4.0.12
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -146,6 +146,10 @@ Yes, we have a quick FAQ with many more questions and answers [here](https://mai
 10. Dashboard Insights
 
 == Changelog ==
+
+= 5.4.0.12 - Maintenance Release - 6-10-2025 =
+
+* Security: Fixed multiple XSS vulnerabilities in administrator areas including Tags Notes, Client Notes, Create Category, Contact Name, and Cost Tracker Notes fields. All vulnerabilities required administrator privileges to exploit. Update to version 5.4.0.12 required.
 
 = 5.4.0.11 - Maintenance Release - 6-3-2025 =
 
