@@ -149,11 +149,32 @@ class MainWP_REST_Authentication { //phpcs:ignore -- NOSONAR - maximumMethodThre
      * @return bool
      */
     private function is_ssl_request() {
-        if ( is_ssl() || wp_is_using_https() ) {
+        if ( is_ssl() || wp_is_using_https() || $this->is_local_request() ) {
             return true;
         }
         return false;
     }
+
+    /**
+     * Method is_local_request().
+     *
+     * @return bool
+     */
+    private function is_local_request() {
+
+        if ( ! isset( $_SERVER['REMOTE_ADDR'] ) ) {
+            return false;
+        }
+
+        $ip = $_SERVER['REMOTE_ADDR']; //phpcs:ignore -- ok.
+
+        // Always allow localhost.
+        if ( '127.0.0.1' === $ip || '::1' === $ip ) {
+            return true;
+        }
+        return false;
+    }
+
 
     /**
      * Authenticate the user if authentication wasn't performed during the
@@ -708,6 +729,8 @@ class MainWP_REST_Authentication { //phpcs:ignore -- NOSONAR - maximumMethodThre
             array( '%d' )
         );
 
+        wp_cache_delete( 'mainwp_api_key_' . md5( $user->consumer_key ) ); // NOSONAR - MD5 used for cache key generation only, not cryptographic (security) purposes.
+
         return true;
     }
 
@@ -721,16 +744,21 @@ class MainWP_REST_Authentication { //phpcs:ignore -- NOSONAR - maximumMethodThre
         global $wpdb;
 
         $consumer_key = \mainwp_api_hash( sanitize_text_field( $consumer_key ) );
-        $user         = $wpdb->get_row(
-            $wpdb->prepare(
-                '
-            SELECT * FROM ' .
-                MainWP_DB::instance()->get_table_name( 'api_keys' ) . '
-            WHERE consumer_key = %s
-            ',
-                $consumer_key
-            )
-        );
+        $cache_key    = 'mainwp_api_key_' . md5( $consumer_key ); // NOSONAR - MD5 used for cache key generation only, not cryptographic (security) purposes.
+        $user         = wp_cache_get( $cache_key );
+
+        if ( false === $user ) {
+            $table_name = esc_sql( MainWP_DB::instance()->get_table_name( 'api_keys' ) );
+            $user = $wpdb->get_row(
+                $wpdb->prepare(
+                    'SELECT * FROM ' . $table_name . ' WHERE consumer_key = %s',
+                    $consumer_key
+                )
+            );
+            if ( $user ) {
+                wp_cache_set( $cache_key, $user );
+            }
+        }
 
         if ( empty( $user->enabled ) ) {
             $this->set_error( new \WP_Error( 'mainwp_rest_authentication_disabled_key', __( 'The REST API Key are disabled.', 'mainwp' ), array( 'status' => 401 ) ) );
@@ -813,6 +841,8 @@ class MainWP_REST_Authentication { //phpcs:ignore -- NOSONAR - maximumMethodThre
             array( '%s' ),
             array( '%d' )
         );
+
+        wp_cache_delete( 'mainwp_api_key_' . md5( $this->user->consumer_key ) ); // NOSONAR - MD5 used for cache key generation only, not cryptographic (security) purposes.
     }
 
     /**

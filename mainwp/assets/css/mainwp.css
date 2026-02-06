@@ -625,6 +625,29 @@ table.mainwp-manage-updates-table tbody tr td .mainwp-update-selected-button {
     overflow: visible !important;
 }
 
+#mainwp-sites-filters-row .mainwp-tags-filter-action {
+    display: inline-flex;
+    align-items: stretch;
+    flex: 0 1 auto;
+    margin: 0;
+}
+
+#mainwp-sites-filters-row .mainwp-tags-filter-action .ui.selection.dropdown {
+    min-width: 120px;
+    max-width: 260px;
+    width: auto !important;
+    margin: 0;
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+#mainwp-sites-filters-row .mainwp-tags-filter-action .ui.dropdown.button {
+    margin: 0;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-left: none !important;
+}
+
 /* Tables */
 
 .mainwp-ui table.dataTable thead>tr>th span.dt-column-order {
@@ -656,6 +679,34 @@ table.mainwp-manage-updates-table tbody tr td .mainwp-update-selected-button {
 }
 
 /* Manage Sites Table */
+
+.mainwp-flag-stack {
+    position: relative;
+    display: inline-block;
+    width: 2.2em;
+    height: 1.5em;
+    vertical-align: middle;
+}
+
+.mainwp-flag-stack__flag {
+    position: absolute;
+    display: inline-block;
+    transform: scale(0.88);
+}
+
+.mainwp-flag-stack__flag--primary {
+    top: -0.24em;
+    left: -0.36em;
+    transform-origin: top left;
+    z-index: 1;
+}
+
+.mainwp-flag-stack__flag--secondary {
+    right: -0.08em;
+    bottom: -0.04em;
+    transform-origin: bottom right;
+    z-index: 2;
+}
 
 table.mainwp-manage-wpsites-table {
     margin: 0;
